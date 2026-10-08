@@ -1,0 +1,112 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>PvZDynamicMusic</AssemblyName>
+    <RootNamespace>PvZDynamicMusic</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <!-- Ignora i warning di conflitto tra la BCL di .NET 6 e Il2Cppmscorlib -->
+    <NoWarn>0433;CS0436</NoWarn>
+    <!-- Non copiare le DLL di riferimento nell'output -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+
+    <!-- Cartella del gioco (quella con Replanted.exe e MelonLoader\). Di default e' la cartella sopra questo progetto;
+         altrimenti: dotnet build -c Release -p:GameDir="D:\Giochi\Plants vs. Zombies - Replanted" -->
+    <GameDir Condition="'$(GameDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))</GameDir>
+    <GameRoot>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</GameRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- I test sono un progetto a parte -->
+    <Compile Remove="tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Core di MelonLoader -->
+    <Reference Include="MelonLoader">
+      <HintPath>$(GameRoot)MelonLoader\net6\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Common">
+      <HintPath>$(GameRoot)MelonLoader\net6\Il2CppInterop.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameRoot)MelonLoader\net6\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Librerie base Il2Cpp (necessarie per risolvere l'ereditarieta' in Assembly-CSharp) -->
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Core">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppSystem.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Codice del gioco -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Moduli di Unity -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Librerie Tekly / Reloaded referenziate dai tipi del gioco -->
+    <Reference Include="Il2CppTekly.Common.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppTekly.Common.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppTekly.DataModels.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppTekly.DataModels.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppTekly.PanelViews.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppTekly.PanelViews.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppTekly.TreeState.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppTekly.TreeState.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppReloaded.Input.Components">
+      <HintPath>$(GameRoot)MelonLoader\Il2CppAssemblies\Il2CppReloaded.Input.Components.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Messaggio chiaro se la cartella del gioco non e' quella giusta (invece di decine di errori CS0012) -->
+  <Target Name="ControllaCartellaGioco" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameRoot)MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll')"
+           Text="Cartella del gioco non valida: '$(GameRoot)'. Serve la cartella con Replanted.exe dopo aver avviato il gioco almeno una volta con MelonLoader (genera MelonLoader\Il2CppAssemblies). Indicala con -p:GameDir=&quot;...&quot;." />
+  </Target>
+
+  <!-- Dopo la compilazione copia la DLL direttamente in Mods\ (se la cartella esiste). Per non copiare: -p:CopyToMods=false -->
+  <Target Name="CopiaInMods" AfterTargets="Build" Condition="'$(CopyToMods)' != 'false' And Exists('$(GameRoot)Mods')">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameRoot)Mods" />
+    <Message Importance="high" Text="Copiata $(TargetFileName) in $(GameRoot)Mods" />
+  </Target>
+</Project>

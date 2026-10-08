@@ -1,0 +1,16 @@
+# Output di compilazione
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# MAI nel repository: musica e file del gioco sono protetti da copyright.
+# (la musica va solo nella tua cartella Mods\DynMus; questo e' solo un paracadute contro commit accidentali)
+*.wav
+*.ogg
+*.mp3
+*.flac
+*.mo3
+Il2CppAssemblies/
+MelonLoader/

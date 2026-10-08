@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Test offline di mixer, decoder WAV, configurazione e libreria file: compila direttamente i sorgenti del mod
+    (nessun bisogno che il gioco sia avviato). Serve solo la cartella del gioco per la DLL Il2CppInterop.Runtime.
+    Come lanciarli, anche in modalita' "check" sui tuoi .wav (sola lettura): vedi la sezione Tests del README.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>CS0436;0433;CS0649</NoWarn>
+
+    <!-- Cartella del gioco: di default tre livelli sopra (repository clonato in una sottocartella del gioco, es. <gioco>\PvZ-Replanted-DynMus). Oppure -p:GameDir="..." -->
+    <GameDir Condition="'$(GameDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..'))</GameDir>
+    <GameRoot>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</GameRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Mixer.cs" />
+    <Compile Include="..\..\Wav.cs" />
+    <Compile Include="..\..\Config.cs" />
+    <Compile Include="..\..\Library.cs" />
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(GameRoot)MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ControllaCartellaGioco" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameRoot)MelonLoader\net6\Il2CppInterop.Runtime.dll')"
+           Text="Cartella del gioco non valida: '$(GameRoot)' (manca MelonLoader\net6\Il2CppInterop.Runtime.dll). Indicala con -p:GameDir=&quot;...&quot;." />
+  </Target>
+</Project>
